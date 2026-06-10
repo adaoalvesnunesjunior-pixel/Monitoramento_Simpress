@@ -1,0 +1,8 @@
+node_modules/
+chamados.db
+uploads/
+server.log
+server.err
+.env
+.netlify/
+*.db

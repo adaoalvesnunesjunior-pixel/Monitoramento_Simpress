@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monitor de Chamados OS</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; color: #333; }
+header { background: linear-gradient(135deg, #1a73e8, #0d47a1); color: white; padding: 20px 30px; display: flex; justify-content: space-between; align-items: center; }
+header h1 { font-size: 24px; font-weight: 600; }
+header .subtitle { font-size: 14px; opacity: 0.8; margin-top: 4px; }
+header .actions { display: flex; gap: 10px; }
+.btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s; }
+.btn-primary { background: #fff; color: #1a73e8; }
+.btn-primary:hover { background: #e8f0fe; }
+.btn-outline { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.5); }
+.btn-outline:hover { background: rgba(255,255,255,0.1); }
+.btn-danger { background: #dc3545; color: white; }
+.btn-danger:hover { background: #c82333; }
+.container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.card { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.card .label { font-size: 13px; color: #666; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+.card .value { font-size: 32px; font-weight: 700; }
+.card .value.blue { color: #1a73e8; }
+.card .value.green { color: #28a745; }
+.card .value.red { color: #dc3545; }
+.card .value.orange { color: #fd7e14; }
+.card .value.purple { color: #6f42c1; }
+
+.filters { background: white; border-radius: 10px; padding: 16px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 20px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.filters input, .filters select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; outline: none; }
+.filters input:focus, .filters select:focus { border-color: #1a73e8; }
+.filters input[type="text"] { min-width: 200px; flex: 1; }
+.filters .filter-label { font-size: 13px; color: #666; margin-right: 4px; }
+
+.table-container { background: white; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th { background: #f8f9fa; padding: 12px 16px; text-align: left; font-size: 13px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #eee; white-space: nowrap; }
+td { padding: 12px 16px; font-size: 14px; border-bottom: 1px solid #f0f0f0; }
+tr:hover td { background: #f8f9ff; }
+tr:last-child td { border-bottom: none; }
+
+.status-badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+.status-Finalizada { background: #d4edda; color: #155724; }
+.status-Aberto { background: #fff3cd; color: #856404; }
+.status-Cancelado { background: #f8d7da; color: #721c24; }
+
+.expand-btn { background: none; border: none; color: #1a73e8; cursor: pointer; font-size: 13px; }
+.expand-btn:hover { text-decoration: underline; }
+.detail-row { display: none; }
+.detail-row td { background: #fafbfc; padding: 16px 20px; }
+.detail-row.active { display: table-row; }
+.detail-content { max-width: 800px; }
+.detail-content .field { margin-bottom: 10px; }
+.detail-content .field-label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+.detail-content .field-value { font-size: 14px; color: #333; line-height: 1.5; }
+
+.loading { text-align: center; padding: 40px; color: #999; }
+.loading::after { content: ''; display: inline-block; width: 20px; height: 20px; margin-left: 8px; border: 2px solid #ddd; border-top-color: #1a73e8; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.last-update { font-size: 12px; color: #999; margin-top: 8px; text-align: right; }
+
+.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+.modal.active { display: flex; }
+.modal-content { background: white; border-radius: 12px; padding: 24px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; }
+.modal-content h2 { margin-bottom: 16px; }
+.modal-content .info { margin-bottom: 20px; color: #666; font-size: 14px; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+.charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.chart-card { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.chart-card h3 { font-size: 15px; margin-bottom: 12px; color: #444; }
+.chart-list { max-height: 300px; overflow-y: auto; }
+.chart-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+.chart-item:last-child { border-bottom: none; }
+.chart-item .bar-bg { flex: 1; margin: 0 12px; background: #f0f0f0; border-radius: 4px; height: 20px; overflow: hidden; position: relative; }
+.chart-item .bar { height: 100%; background: linear-gradient(90deg, #1a73e8, #4a9af5); border-radius: 4px; transition: width 0.3s; }
+.chart-item .count { font-weight: 600; color: #333; min-width: 30px; text-align: right; }
+
+@media (max-width: 768px) {
+  .charts { grid-template-columns: 1fr; }
+  .filters { flex-direction: column; }
+  .filters input[type="text"] { min-width: auto; width: 100%; }
+  header { flex-direction: column; gap: 12px; align-items: flex-start; }
+}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Monitor de Chamados OS</h1>
+    <div class="subtitle">Sistema de acompanhamento de ordens de serviço</div>
+  </div>
+  <div class="actions">
+    <button class="btn btn-primary" onclick="importCsv()">Importar CSV</button>
+    <button class="btn btn-outline" onclick="refreshAll()">Atualizar</button>
+  </div>
+</header>
+
+<div class="container">
+  <div class="cards" id="cards">
+    <div class="card"><div class="label">Total</div><div class="value blue" id="stat-total">—</div></div>
+    <div class="card"><div class="label">Abertos</div><div class="value orange" id="stat-abertos">—</div></div>
+    <div class="card"><div class="label">Finalizados</div><div class="value green" id="stat-finalizados">—</div></div>
+    <div class="card"><div class="label">Cancelados</div><div class="value red" id="stat-cancelados">—</div></div>
+  </div>
+
+  <div class="charts" id="charts">
+    <div class="chart-card">
+      <h3>Por Status</h3>
+      <div class="chart-list" id="chart-status"></div>
+    </div>
+    <div class="chart-card">
+      <h3>Por Modelo</h3>
+      <div class="chart-list" id="chart-modelos"></div>
+    </div>
+    <div class="chart-card">
+      <h3>Por Ocorrência</h3>
+      <div class="chart-list" id="chart-ocorrencias"></div>
+    </div>
+    <div class="chart-card">
+      <h3>Top Lojas</h3>
+      <div class="chart-list" id="chart-lojas"></div>
+    </div>
+  </div>
+
+  <div class="filters">
+    <span class="filter-label">Buscar:</span>
+    <input type="text" id="filter-search" placeholder="Nº OS, série, descrição..." oninput="debounceSearch()">
+    <span class="filter-label">Status:</span>
+    <select id="filter-status" onchange="loadChamados()">
+      <option value="">Todos</option>
+      <option value="Finalizada">Finalizada</option>
+      <option value="Aberto">Aberto</option>
+      <option value="Cancelado">Cancelado</option>
+    </select>
+    <span class="filter-label">Modelo:</span>
+    <select id="filter-modelo" onchange="loadChamados()">
+      <option value="">Todos</option>
+    </select>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Nº OS</th>
+          <th>Série</th>
+          <th>Modelo</th>
+          <th>Loja</th>
+          <th>Abertura</th>
+          <th>Previsão</th>
+          <th>Status</th>
+          <th>Ocorrência</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="chamados-body">
+        <tr><td colspan="9" class="loading">Carregando...</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="last-update" id="last-update"></div>
+</div>
+
+<div class="modal" id="import-modal">
+  <div class="modal-content">
+    <h2>Importar CSV</h2>
+    <div class="info">Selecione o arquivo CSV para importar. O banco de dados atual será substituído.</div>
+    <input type="file" id="csv-file" accept=".csv">
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()" style="color:#333;border-color:#ddd;">Cancelar</button>
+      <button class="btn btn-danger" onclick="uploadCsv()">Importar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let searchTimeout;
+
+function debounceSearch() {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(loadChamados, 400);
+}
+
+async function refreshAll() {
+  await Promise.all([loadStats(), loadChamados()]);
+}
+
+async function loadStats() {
+  try {
+    const res = await fetch('/api/stats');
+    const stats = await res.json();
+
+    document.getElementById('stat-total').textContent = stats.total?.total || 0;
+    document.getElementById('stat-abertos').textContent = stats.abertos?.total || 0;
+    document.getElementById('stat-finalizados').textContent = stats.finalizados?.total || 0;
+    document.getElementById('stat-cancelados').textContent = stats.cancelados?.total || 0;
+
+    renderChart('chart-status', stats.status_agrupado || []);
+    renderChart('chart-modelos', (stats.modelos || []).slice(0, 10));
+    renderChart('chart-ocorrencias', (stats.ocorrencias || []).slice(0, 10));
+    renderChart('chart-lojas', (stats.lojas || []).slice(0, 10));
+
+    const modelos = stats.modelos || [];
+    const select = document.getElementById('filter-modelo');
+    const currentVal = select.value;
+    select.innerHTML = '<option value="">Todos</option>';
+    modelos.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.modelo;
+      opt.textContent = `${m.modelo} (${m.count})`;
+      select.appendChild(opt);
+    });
+    select.value = currentVal;
+
+    document.getElementById('last-update').textContent = `Última atualização: ${new Date().toLocaleString('pt-BR')}`;
+  } catch (err) {
+    console.error('Erro ao carregar stats:', err);
+  }
+}
+
+function renderChart(elementId, data) {
+  const el = document.getElementById(elementId);
+  if (!data.length) {
+    el.innerHTML = '<div style="color:#999;padding:10px;">Nenhum dado</div>';
+    return;
+  }
+  const maxVal = Math.max(...data.map(d => d.count || d.total));
+  el.innerHTML = data.map(d => {
+    const label = d.status || d.modelo || d.ocorrencia || d.loja_localidade || '—';
+    const val = d.count || d.total || 0;
+    const pct = maxVal > 0 ? (val / maxVal * 100) : 0;
+    return `<div class="chart-item">
+      <span style="min-width:100px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${label}">${label}</span>
+      <div class="bar-bg"><div class="bar" style="width:${pct}%"></div></div>
+      <span class="count">${val}</span>
+    </div>`;
+  }).join('');
+}
+
+async function loadChamados() {
+  const tbody = document.getElementById('chamados-body');
+  tbody.innerHTML = '<tr><td colspan="9" class="loading">Carregando...</td></tr>';
+
+  try {
+    const params = new URLSearchParams();
+    const search = document.getElementById('filter-search').value;
+    const status = document.getElementById('filter-status').value;
+    const modelo = document.getElementById('filter-modelo').value;
+    if (search) params.set('search', search);
+    if (status) params.set('status', status);
+    if (modelo) params.set('modelo', modelo);
+    params.set('limit', '200');
+
+    const res = await fetch(`/api/chamados?${params}`);
+    const chamados = await res.json();
+
+    if (!chamados.length) {
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:#999;">Nenhum chamado encontrado</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = chamados.map((c, i) => `
+      <tr>
+        <td><strong>${c.numero_os || '—'}</strong></td>
+        <td style="font-size:12px;">${c.numero_serie || '—'}</td>
+        <td>${c.modelo || '—'}</td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${c.loja_localidade || ''}">${c.loja_localidade || '—'}</td>
+        <td style="white-space:nowrap;">${c.abertura || '—'}</td>
+        <td style="white-space:nowrap;">${c.previsao || '—'}</td>
+        <td><span class="status-badge status-${(c.status || '').replace(/\s+/g, '')}">${c.status || '—'}</span></td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${c.ocorrencia || ''}">${c.ocorrencia || '—'}</td>
+        <td><button class="expand-btn" onclick="toggleDetail(${i})">Detalhes</button></td>
+      </tr>
+      <tr class="detail-row" id="detail-${i}">
+        <td colspan="9">
+          <div class="detail-content">
+            <div class="field"><div class="field-label">Descrição</div><div class="field-value">${(c.descricao || '—').replace(/\n/g, '<br>')}</div></div>
+            <div class="field"><div class="field-label">Observação</div><div class="field-value">${(c.observacao || '—').replace(/\n/g, '<br>')}</div></div>
+            <div class="field"><div class="field-label">Ocorrência</div><div class="field-value">${(c.ocorrencia || '—').replace(/\n/g, '<br>')}</div></div>
+            <div class="field"><div class="field-label">Finalizado</div><div class="field-value">${c.finalizado || '—'}</div></div>
+            <div class="field"><div class="field-label">CEP</div><div class="field-value">${c.cep || '—'}</div></div>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:40px;color:#dc3545;">Erro ao carregar: ${err.message}</td></tr>`;
+  }
+}
+
+function toggleDetail(index) {
+  const row = document.getElementById(`detail-${index}`);
+  row.classList.toggle('active');
+}
+
+function importCsv() {
+  document.getElementById('import-modal').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('import-modal').classList.remove('active');
+}
+
+async function uploadCsv() {
+  const fileInput = document.getElementById('csv-file');
+  if (!fileInput.files.length) {
+    alert('Selecione um arquivo CSV.');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('csv', fileInput.files[0]);
+
+  try {
+    const res = await fetch('/api/import', { method: 'POST', body: formData });
+    const result = await res.json();
+    if (result.success) {
+      alert(`Importados ${result.count} registros com sucesso!`);
+      closeModal();
+      refreshAll();
+    } else {
+      alert('Erro ao importar: ' + (result.error || 'Desconhecido'));
+    }
+  } catch (err) {
+    alert('Erro ao importar: ' + err.message);
+  }
+}
+
+refreshAll();
+</script>
+</body>
+</html>
