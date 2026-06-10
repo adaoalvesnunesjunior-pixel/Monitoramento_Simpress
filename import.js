@@ -4,8 +4,8 @@ const { parse } = require('csv-parse/sync');
 const XLSX = require('xlsx');
 const { importCsv, clearDatabase } = require('./database');
 
-const CSV_PATH = path.join(__dirname, '..', 'Chamados de Os(OS).csv');
-const XLSX_PATH = path.join(__dirname, '..', 'Chamados de Os(OS).xlsx');
+const CSV_PATH = path.join(__dirname, 'Chamados de Os(OS).csv');
+const XLSX_PATH = path.join(__dirname, 'Chamados de Os(OS).xlsx');
 
 async function main() {
   console.log('=== Importador de Chamados OS ===\n');

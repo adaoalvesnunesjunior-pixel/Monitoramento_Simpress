@@ -38,7 +38,6 @@ async function importCsv(records) {
   const c = getClient();
   await ensureTable();
 
-  await c.execute('BEGIN TRANSACTION');
   let count = 0;
   for (const row of records) {
     await c.execute({
@@ -60,7 +59,6 @@ async function importCsv(records) {
     });
     count++;
   }
-  await c.execute('COMMIT');
   return count;
 }
 
