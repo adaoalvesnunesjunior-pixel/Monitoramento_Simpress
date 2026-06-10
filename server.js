@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const multer = require('multer');
 const { parse } = require('csv-parse/sync');
+const XLSX = require('xlsx');
 const { importCsv, clearDatabase, getChamados, getStats, getChamadoById } = require('./database');
 
 const app = express();
@@ -51,18 +52,31 @@ app.get('/api/chamados/:id', async (req, res) => {
   }
 });
 
-app.post('/api/import', upload.single('csv'), async (req, res) => {
+app.post('/api/import', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'Nenhum arquivo enviado' });
 
-    const content = req.file.buffer.toString('latin1');
-    const records = parse(content, {
-      delimiter: ';',
-      columns: true,
-      skip_empty_lines: true,
-      relax_column_count: true,
-      bom: true,
-    });
+    let records;
+    const ext = path.extname(req.file.originalname).toLowerCase();
+
+    if (ext === '.csv') {
+      const content = req.file.buffer.toString('latin1');
+      records = parse(content, {
+        delimiter: ';',
+        columns: true,
+        skip_empty_lines: true,
+        relax_column_count: true,
+        bom: true,
+      });
+    } else if (ext === '.xlsx' || ext === '.xls') {
+      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+      records = jsonData;
+    } else {
+      return res.status(400).json({ error: 'Formato inválido. Use .csv ou .xlsx' });
+    }
 
     await clearDatabase();
     const count = await importCsv(records);

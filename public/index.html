@@ -96,7 +96,7 @@ tr:last-child td { border-bottom: none; }
     <div class="subtitle">Sistema de acompanhamento de ordens de serviço</div>
   </div>
   <div class="actions">
-    <button class="btn btn-primary" onclick="importCsv()">Importar CSV</button>
+    <button class="btn btn-primary" onclick="importCsv()">Importar CSV/Excel</button>
     <button class="btn btn-outline" onclick="refreshAll()">Atualizar</button>
   </div>
 </header>
@@ -169,9 +169,9 @@ tr:last-child td { border-bottom: none; }
 
 <div class="modal" id="import-modal">
   <div class="modal-content">
-    <h2>Importar CSV</h2>
-    <div class="info">Selecione o arquivo CSV para importar. O banco de dados atual será substituído.</div>
-    <input type="file" id="csv-file" accept=".csv">
+    <h2>Importar Planilha</h2>
+    <div class="info">Selecione um arquivo CSV ou Excel (.xlsx) para importar. O banco de dados atual será substituído.</div>
+    <input type="file" id="csv-file" accept=".csv,.xlsx">
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal()" style="color:#333;border-color:#ddd;">Cancelar</button>
       <button class="btn btn-danger" onclick="uploadCsv()">Importar</button>
@@ -310,12 +310,12 @@ function closeModal() {
 async function uploadCsv() {
   const fileInput = document.getElementById('csv-file');
   if (!fileInput.files.length) {
-    alert('Selecione um arquivo CSV.');
+    alert('Selecione um arquivo.');
     return;
   }
 
   const formData = new FormData();
-  formData.append('csv', fileInput.files[0]);
+  formData.append('file', fileInput.files[0]);
 
   try {
     const res = await fetch('/api/import', { method: 'POST', body: formData });
