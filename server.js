@@ -11,13 +11,14 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 app.use(express.json());
 
-let publicDir = path.join(__dirname, 'public');
-if (!fs.existsSync(publicDir)) {
-  publicDir = path.join(__dirname, '..', 'public');
+function findPublic(dir) {
+  const testPath = path.join(dir, 'public');
+  if (fs.existsSync(testPath) && fs.statSync(testPath).isDirectory()) return testPath;
+  const parent = path.dirname(dir);
+  if (parent === dir) return null;
+  return findPublic(parent);
 }
-if (!fs.existsSync(publicDir)) {
-  publicDir = path.join(__dirname, '..', '..', 'public');
-}
+const publicDir = findPublic(__dirname) || path.join(__dirname, 'public');
 app.use(express.static(publicDir));
 
 app.get('/api/stats', async (req, res) => {
