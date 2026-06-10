@@ -1,5 +1,6 @@
 [build]
   functions = "netlify/functions"
+  publish = "public"
 
 [[redirects]]
   from = "/api/*"
@@ -8,5 +9,5 @@
 
 [[redirects]]
   from = "/*"
-  to = "/.netlify/functions/server"
+  to = "/index.html"
   status = 200

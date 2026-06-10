@@ -1,6 +1,5 @@
 const express = require('express');
 const path = require('path');
-const fs = require('fs');
 const multer = require('multer');
 const { parse } = require('csv-parse/sync');
 const { importCsv, clearDatabase, getChamados, getStats, getChamadoById } = require('./database');
@@ -11,15 +10,10 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 app.use(express.json());
 
-function findPublic(dir) {
-  const testPath = path.join(dir, 'public');
-  if (fs.existsSync(testPath) && fs.statSync(testPath).isDirectory()) return testPath;
-  const parent = path.dirname(dir);
-  if (parent === dir) return null;
-  return findPublic(parent);
+const isNetlify = process.env.NETLIFY === 'true' || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+if (!isNetlify) {
+  app.use(express.static(path.join(__dirname, 'public')));
 }
-const publicDir = findPublic(__dirname) || path.join(__dirname, 'public');
-app.use(express.static(publicDir));
 
 app.get('/api/stats', async (req, res) => {
   try {
@@ -79,9 +73,11 @@ app.post('/api/import', upload.single('csv'), async (req, res) => {
   }
 });
 
-app.get('*', (req, res) => {
-  res.sendFile(path.join(publicDir, 'index.html'));
-});
+if (!isNetlify) {
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  });
+}
 
 if (require.main === module) {
   app.listen(PORT, () => {
