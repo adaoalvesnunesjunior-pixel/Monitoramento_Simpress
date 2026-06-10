@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 const multer = require('multer');
 const { parse } = require('csv-parse/sync');
 const { importCsv, clearDatabase, getChamados, getStats, getChamadoById } = require('./database');
@@ -9,7 +10,15 @@ const PORT = process.env.PORT || 3000;
 const upload = multer({ storage: multer.memoryStorage() });
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+
+let publicDir = path.join(__dirname, 'public');
+if (!fs.existsSync(publicDir)) {
+  publicDir = path.join(__dirname, '..', 'public');
+}
+if (!fs.existsSync(publicDir)) {
+  publicDir = path.join(__dirname, '..', '..', 'public');
+}
+app.use(express.static(publicDir));
 
 app.get('/api/stats', async (req, res) => {
   try {
@@ -70,7 +79,7 @@ app.post('/api/import', upload.single('csv'), async (req, res) => {
 });
 
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(publicDir, 'index.html'));
 });
 
 if (require.main === module) {
